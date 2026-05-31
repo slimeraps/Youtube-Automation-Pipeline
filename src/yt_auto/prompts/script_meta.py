@@ -8,6 +8,8 @@ import secrets
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
+from jinja2 import Environment, PackageLoader, select_autoescape
+
 VideoFormat = Literal["long", "short"]
 
 TONES: tuple[str, ...] = (
@@ -133,8 +135,6 @@ def target_word_count(video_format: VideoFormat, voice_category: str | None = No
     wps = wps_for_voice(voice_category) if voice_category else DEFAULT_WPS
     return int(target_duration_seconds(video_format) * wps)
 
-
-from jinja2 import Environment, PackageLoader, select_autoescape
 
 _env = Environment(
     loader=PackageLoader("yt_auto.prompts", "templates"),
