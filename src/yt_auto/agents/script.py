@@ -1,4 +1,5 @@
 """Script Agent: builds script.json from topic + format using Gemini."""
+
 import json
 from typing import Any, Protocol
 

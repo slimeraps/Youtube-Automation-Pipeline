@@ -2,6 +2,7 @@
 
 Skipped when GEMINI_API_KEY is not set so CI can stay clean.
 """
+
 import json
 import os
 from pathlib import Path

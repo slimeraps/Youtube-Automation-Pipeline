@@ -38,13 +38,19 @@ def test_cli_script_subcommand_runs_agent_and_writes_artifact(
     monkeypatch.setenv("GEMINI_API_KEY", "fake")
     monkeypatch.setenv("OUTPUTS_DIR", str(tmp_path))
     monkeypatch.setattr("yt_auto.cli.build_script_agent", fake_build_agent)
-    monkeypatch.setattr(sys, "argv", [
-        "yt_auto",
-        "script",
-        "the history of espresso",
-        "--format", "short",
-        "--seed", "123",
-    ])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "yt_auto",
+            "script",
+            "the history of espresso",
+            "--format",
+            "short",
+            "--seed",
+            "123",
+        ],
+    )
 
     main()
 
@@ -67,9 +73,17 @@ def test_cli_requires_topic(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_cli_validates_format(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(sys, "argv", [
-        "yt_auto", "script", "topic", "--format", "vertical",
-    ])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "yt_auto",
+            "script",
+            "topic",
+            "--format",
+            "vertical",
+        ],
+    )
     with pytest.raises(SystemExit):
         main()
 

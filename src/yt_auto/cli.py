@@ -1,4 +1,5 @@
 """Command-line entrypoint. Phase 1 supports only the `script` subcommand."""
+
 import argparse
 import asyncio
 import sys

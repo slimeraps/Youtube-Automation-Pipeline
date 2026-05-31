@@ -1,4 +1,5 @@
 """Thin async wrapper around google-genai for JSON-mode calls."""
+
 import asyncio
 import json
 from typing import Any

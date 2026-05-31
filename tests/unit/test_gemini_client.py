@@ -47,6 +47,7 @@ class _FakeGenaiClient:
 def _ok_with(text: str) -> Callable[[str], Awaitable[_FakeResponse]]:
     async def _handler(_prompt: str) -> _FakeResponse:
         return _FakeResponse(text=text)
+
     return _handler
 
 

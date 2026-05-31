@@ -3,6 +3,7 @@
 Same topic, same seed → same parameter choices → reproducible run.
 Same topic, different seed → different video.
 """
+
 import random
 import secrets
 from dataclasses import asdict, dataclass

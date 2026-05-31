@@ -56,7 +56,7 @@ def test_ominous_tone_biases_toward_deep_or_mysterious_voice() -> None:
     total = sum(voice_counts.values())
     assert total > 0, "ominous tone should appear in 2000 seeds"
     matching = voice_counts["deep_documentary"] + voice_counts["mysterious_lowkey"]
-    assert matching / total >= 0.55, f"expected >=55%, got {matching/total:.0%}"
+    assert matching / total >= 0.55, f"expected >=55%, got {matching / total:.0%}"
 
 
 @pytest.mark.parametrize(

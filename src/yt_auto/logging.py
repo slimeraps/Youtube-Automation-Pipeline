@@ -1,4 +1,5 @@
 """structlog setup. Call configure_logging() once at process start."""
+
 import logging
 import sys
 from typing import Any

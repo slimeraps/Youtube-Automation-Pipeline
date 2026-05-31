@@ -53,8 +53,11 @@ async def test_script_agent_writes_well_formed_script_json(
     assert data["topic"] == "the history of espresso"
     assert data["format"] == "short"
     assert data["voice_category"] in {
-        "calm_narrator", "energetic_explainer", "deep_documentary",
-        "warm_storyteller", "mysterious_lowkey",
+        "calm_narrator",
+        "energetic_explainer",
+        "deep_documentary",
+        "warm_storyteller",
+        "mysterious_lowkey",
     }
     assert data["duration_target_s"] == 50
     assert data["narration"] == narration_fixture["narration"]
