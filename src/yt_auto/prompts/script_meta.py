@@ -132,3 +132,33 @@ def wps_for_voice(voice_category: str) -> float:
 def target_word_count(video_format: VideoFormat, voice_category: str | None = None) -> int:
     wps = wps_for_voice(voice_category) if voice_category else DEFAULT_WPS
     return int(target_duration_seconds(video_format) * wps)
+
+
+from jinja2 import Environment, PackageLoader, select_autoescape
+
+_env = Environment(
+    loader=PackageLoader("yt_auto.prompts", "templates"),
+    autoescape=select_autoescape(enabled_extensions=()),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
+
+
+def render_narration_prompt(
+    topic: str,
+    video_format: VideoFormat,
+    params: PromptParams,
+    word_target: int,
+) -> str:
+    tmpl = _env.get_template("narration.j2")
+    return tmpl.render(
+        topic=topic,
+        video_format=video_format,
+        params=params,
+        word_target=word_target,
+    )
+
+
+def render_scene_visuals_prompt(scenes: list[dict[str, Any]]) -> str:
+    tmpl = _env.get_template("scene_visuals.j2")
+    return tmpl.render(scenes=scenes)
