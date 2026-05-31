@@ -1,0 +1,14 @@
+{
+  "narration": "A curious traveler arrives at dawn. The city wakes slowly. Steam rises from copper pots. The first cup is poured.",
+  "scene_breaks": [
+    {"index": 0, "narration_excerpt": "A curious traveler arrives at dawn."},
+    {"index": 1, "narration_excerpt": "The city wakes slowly."},
+    {"index": 2, "narration_excerpt": "Steam rises from copper pots."},
+    {"index": 3, "narration_excerpt": "The first cup is poured."}
+  ],
+  "youtube": {
+    "title": "Espresso at Dawn",
+    "description": "A short journey through the origins of espresso.",
+    "tags": ["espresso", "coffee", "history"]
+  }
+}

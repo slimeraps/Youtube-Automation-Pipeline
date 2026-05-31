@@ -1,0 +1,8 @@
+{
+  "scenes": [
+    {"index": 0, "visual_prompt": "lone figure approaches old city gates at sunrise", "pexels_query": "traveler city gates sunrise"},
+    {"index": 1, "visual_prompt": "narrow cobblestone streets coming alive with morning light", "pexels_query": "cobblestone street morning"},
+    {"index": 2, "visual_prompt": "close-up of polished copper espresso pots venting steam", "pexels_query": "copper espresso steam closeup"},
+    {"index": 3, "visual_prompt": "barista pours rich crema into a small white cup", "pexels_query": "barista pouring espresso crema"}
+  ]
+}
