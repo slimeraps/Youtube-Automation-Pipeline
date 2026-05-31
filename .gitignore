@@ -1,0 +1,33 @@
+# Secrets
+.env
+assets/youtube_credentials.json
+assets/youtube_token.json
+
+# Run artifacts
+outputs/
+data/*.db
+data/*.db-journal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Whisper model cache
+models/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
