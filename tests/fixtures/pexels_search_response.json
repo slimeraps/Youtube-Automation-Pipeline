@@ -1,0 +1,35 @@
+{
+  "page": 1,
+  "per_page": 3,
+  "total_results": 50,
+  "videos": [
+    {
+      "id": 100,
+      "width": 1920,
+      "height": 1080,
+      "duration": 12,
+      "video_files": [
+        {"id": 1, "quality": "hd", "width": 1920, "height": 1080, "link": "https://example.com/hd.mp4"},
+        {"id": 2, "quality": "sd", "width": 640, "height": 360, "link": "https://example.com/sd.mp4"}
+      ]
+    },
+    {
+      "id": 101,
+      "width": 1280,
+      "height": 720,
+      "duration": 5,
+      "video_files": [
+        {"id": 3, "quality": "hd", "width": 1280, "height": 720, "link": "https://example.com/hd2.mp4"}
+      ]
+    },
+    {
+      "id": 102,
+      "width": 1920,
+      "height": 1080,
+      "duration": 20,
+      "video_files": [
+        {"id": 4, "quality": "hd", "width": 1920, "height": 1080, "link": "https://example.com/hd3.mp4"}
+      ]
+    }
+  ]
+}
