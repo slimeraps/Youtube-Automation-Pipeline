@@ -44,7 +44,7 @@ class _FakeGenaiClient:
         self.aio = _FakeAio(models)
 
 
-async def _ok_with(text: str) -> Callable[[str], Awaitable[_FakeResponse]]:
+def _ok_with(text: str) -> Callable[[str], Awaitable[_FakeResponse]]:
     async def _handler(_prompt: str) -> _FakeResponse:
         return _FakeResponse(text=text)
     return _handler
@@ -52,7 +52,7 @@ async def _ok_with(text: str) -> Callable[[str], Awaitable[_FakeResponse]]:
 
 @pytest.mark.asyncio
 async def test_generate_json_parses_valid_response() -> None:
-    handler = await _ok_with(json.dumps({"hello": "world"}))
+    handler = _ok_with(json.dumps({"hello": "world"}))
     models = _FakeAsyncModels(handler)
     client = GeminiClient(api_key="k", model="m", _genai_client=_FakeGenaiClient(models))
 

@@ -71,7 +71,7 @@ class GeminiClient:
         raise GeminiInvalidJSONError(
             f"model returned non-JSON after {self._max_json_retries} retries: {last_exc}",
             raw_text=last_raw,
-        )
+        ) from last_exc
 
     async def _call_with_retries(self, *, prompt: str, config: Any) -> str:
         backoff = self._initial_backoff
