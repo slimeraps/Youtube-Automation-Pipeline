@@ -8,7 +8,6 @@ from yt_auto.prompts.script_meta import (
     STRUCTURES,
     TONES,
     VOICE_CATEGORIES,
-    PromptParams,
     build_params,
     target_duration_seconds,
     target_word_count,
