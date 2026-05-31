@@ -1,4 +1,5 @@
 """Async wrapper around the (sync) elevenlabs SDK for MP3 text-to-speech."""
+
 import asyncio
 from pathlib import Path
 from typing import Any
@@ -27,10 +28,12 @@ class ElevenLabsClient:
             self._sdk = _sdk
         else:
             from elevenlabs.client import ElevenLabs  # imported lazily for testability
+
             self._sdk = ElevenLabs(api_key=api_key)
 
     async def synthesize_to_mp3(self, *, text: str, voice_id: str, dest: Path) -> None:
         """Synthesize `text` with `voice_id` and write the resulting MP3 to `dest`."""
+
         def _call() -> bytes:
             try:
                 chunks = self._sdk.text_to_speech.convert(

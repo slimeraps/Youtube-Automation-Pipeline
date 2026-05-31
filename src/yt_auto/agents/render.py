@@ -1,4 +1,5 @@
 """Render Agent: mux silent video + narration + burned-in captions → final.mp4."""
+
 from yt_auto.ffmpeg.probe import probe_duration_s
 from yt_auto.ffmpeg.render import render_final
 from yt_auto.logging import get_logger
@@ -28,8 +29,10 @@ class RenderAgent:
             audio=ctx.artifacts["voice.mp3"],
             subtitles=ctx.artifacts["captions.srt"],
             dest=dest,
-            width=width, height=height,
-            video_bitrate=_VIDEO_BITRATE, audio_bitrate=_AUDIO_BITRATE,
+            width=width,
+            height=height,
+            video_bitrate=_VIDEO_BITRATE,
+            audio_bitrate=_AUDIO_BITRATE,
             fps=_FPS,
         )
 

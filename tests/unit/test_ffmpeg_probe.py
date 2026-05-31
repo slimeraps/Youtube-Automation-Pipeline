@@ -1,5 +1,6 @@
 """These tests shell out to real ffmpeg/ffprobe. They're fast (<2s) but require
 ffmpeg on PATH. Skip with -k 'not ffmpeg' if you don't have it yet."""
+
 import subprocess
 from pathlib import Path
 
@@ -11,11 +12,18 @@ from yt_auto.ffmpeg.probe import probe_duration_s
 def _make_silent_wav(path: Path, seconds: float) -> None:
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "lavfi", "-i",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
             "anullsrc=channel_layout=mono:sample_rate=22050",
-            "-t", str(seconds), str(path),
+            "-t",
+            str(seconds),
+            str(path),
         ],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
 

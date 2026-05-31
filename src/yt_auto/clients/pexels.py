@@ -1,4 +1,5 @@
 """Thin async client for Pexels video search + download."""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -42,13 +43,15 @@ class PexelsClient:
             best = self._pick_best_video_file(v.get("video_files", []))
             if best is None:
                 continue
-            clips.append(Clip(
-                id=int(v["id"]),
-                duration_s=int(v["duration"]),
-                width=int(best["width"]),
-                height=int(best["height"]),
-                url=str(best["link"]),
-            ))
+            clips.append(
+                Clip(
+                    id=int(v["id"]),
+                    duration_s=int(v["duration"]),
+                    width=int(best["width"]),
+                    height=int(best["height"]),
+                    url=str(best["link"]),
+                )
+            )
         log.info("pexels_search", query=query, clip_count=len(clips))
         return clips
 

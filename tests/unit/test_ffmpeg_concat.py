@@ -10,11 +10,20 @@ from yt_auto.ffmpeg.probe import probe_duration_s
 def _make_test_video(path: Path, seconds: float, width: int = 1920, height: int = 1080) -> None:
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "lavfi", "-i",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
             f"color=c=blue:size={width}x{height}:duration={seconds}:rate=30",
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
         ],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
 

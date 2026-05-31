@@ -52,11 +52,15 @@ def test_run_context_merge_later_metadata_wins() -> None:
 def test_load_run_context_from_disk_rehydrates_minimal_state(tmp_path: Path) -> None:
     run_dir = tmp_path / "01HZZ"
     run_dir.mkdir()
-    (run_dir / "script.json").write_text(json.dumps({
-        "topic": "the history of espresso",
-        "format": "short",
-        "voice_category": "calm_narrator",
-    }))
+    (run_dir / "script.json").write_text(
+        json.dumps(
+            {
+                "topic": "the history of espresso",
+                "format": "short",
+                "voice_category": "calm_narrator",
+            }
+        )
+    )
 
     ctx = load_run_context_from_disk(run_dir, visibility="public")
 
@@ -71,9 +75,15 @@ def test_load_run_context_from_disk_rehydrates_minimal_state(tmp_path: Path) -> 
 def test_load_run_context_from_disk_includes_existing_artifacts(tmp_path: Path) -> None:
     run_dir = tmp_path / "01HXX"
     run_dir.mkdir()
-    (run_dir / "script.json").write_text(json.dumps({
-        "topic": "t", "format": "long", "voice_category": "deep_documentary",
-    }))
+    (run_dir / "script.json").write_text(
+        json.dumps(
+            {
+                "topic": "t",
+                "format": "long",
+                "voice_category": "deep_documentary",
+            }
+        )
+    )
     (run_dir / "voice.mp3").write_bytes(b"x")
     (run_dir / "captions.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\nhi\n")
 

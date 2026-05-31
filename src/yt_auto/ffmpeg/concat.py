@@ -1,6 +1,7 @@
 """Concatenate pre-prepared clips into one silent output file using the ffmpeg
 concat demuxer. All input clips MUST already share codec, fps, resolution
 (use prepare_clip first)."""
+
 import asyncio
 from pathlib import Path
 
@@ -20,11 +21,16 @@ async def concat_clips(*, clips: list[Path], dest: Path) -> None:
 
     try:
         proc = await asyncio.create_subprocess_exec(
-            "ffmpeg", "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", str(manifest),
-            "-c", "copy",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(manifest),
+            "-c",
+            "copy",
             str(dest),
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,

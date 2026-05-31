@@ -101,6 +101,7 @@ class StubVoice:
 
     async def run(self, ctx: Any) -> Any:
         from yt_auto.pipeline.base import StageResult
+
         self.ran_with = ctx
         dest = ctx.run_dir / "voice.mp3"
         dest.write_bytes(b"x")
@@ -109,9 +110,15 @@ class StubVoice:
 
 def _seed_run_dir(run_dir: Path) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "script.json").write_text(json.dumps({
-        "topic": "t", "format": "short", "voice_category": "calm_narrator",
-    }))
+    (run_dir / "script.json").write_text(
+        json.dumps(
+            {
+                "topic": "t",
+                "format": "short",
+                "voice_category": "calm_narrator",
+            }
+        )
+    )
 
 
 def test_cli_voice_subcommand_loads_run_and_invokes_agent(

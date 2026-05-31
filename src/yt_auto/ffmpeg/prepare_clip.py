@@ -1,5 +1,6 @@
 """Trim or loop a single source clip to an exact target duration and scale/crop
 to target dimensions. Output is always silent H.264."""
+
 import asyncio
 from pathlib import Path
 
@@ -42,14 +43,21 @@ async def prepare_clip(
         loops_needed = int(target_duration_s // src_duration) + 1
         args += ["-stream_loop", str(loops_needed)]
     args += [
-        "-i", str(src),
-        "-t", f"{target_duration_s:.3f}",
-        "-vf", vf,
-        "-an",                                  # strip audio (we add narration later)
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        "-preset", "medium",
-        "-crf", "20",
+        "-i",
+        str(src),
+        "-t",
+        f"{target_duration_s:.3f}",
+        "-vf",
+        vf,
+        "-an",  # strip audio (we add narration later)
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-preset",
+        "medium",
+        "-crf",
+        "20",
         str(dest),
     ]
 

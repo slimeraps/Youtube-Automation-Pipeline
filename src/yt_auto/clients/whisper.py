@@ -1,4 +1,5 @@
 """Local faster-whisper wrapper. Sync internals, async surface via to_thread."""
+
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +30,7 @@ class WhisperClient:
             self._model = _model
         else:
             from faster_whisper import WhisperModel  # lazy import
+
             self._model = WhisperModel(model_name, device=device, compute_type=compute_type)
 
     async def transcribe(self, audio: Path) -> list[Segment]:
@@ -39,8 +41,11 @@ class WhisperClient:
                 for s in segments_iter
             ]
             log.info(
-                "whisper_done", segments=len(out),
-                language=info.get("language") if isinstance(info, dict) else getattr(info, "language", None),
+                "whisper_done",
+                segments=len(out),
+                language=info.get("language")
+                if isinstance(info, dict)
+                else getattr(info, "language", None),
             )
             return out
 

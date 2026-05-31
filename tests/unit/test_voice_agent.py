@@ -25,8 +25,11 @@ async def _fake_probe(_path: Path) -> float:
 
 def _make_ctx(tmp_path: Path) -> RunContext:
     return RunContext(
-        run_id="01HVOICE", topic="t", format="short",
-        visibility="public", run_dir=tmp_path,
+        run_id="01HVOICE",
+        topic="t",
+        format="short",
+        visibility="public",
+        run_dir=tmp_path,
         artifacts={"script.json": tmp_path / "script.json"},
         metadata={"voice_category": "calm_narrator"},
     )
@@ -34,10 +37,14 @@ def _make_ctx(tmp_path: Path) -> RunContext:
 
 def _write_script_json(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({
-        "narration": "Once upon a time there was a curious traveler.",
-        "voice_category": "calm_narrator",
-    }))
+    path.write_text(
+        json.dumps(
+            {
+                "narration": "Once upon a time there was a curious traveler.",
+                "voice_category": "calm_narrator",
+            }
+        )
+    )
 
 
 @pytest.mark.asyncio
@@ -75,15 +82,23 @@ async def test_voice_agent_uses_category_from_script_when_missing_in_metadata(
         voice_id_for_category=lambda cat: "vid-deep" if cat == "deep_documentary" else "x",
     )
     ctx = RunContext(
-        run_id="r", topic="t", format="short", visibility="public",
+        run_id="r",
+        topic="t",
+        format="short",
+        visibility="public",
         run_dir=tmp_path,
         artifacts={"script.json": tmp_path / "script.json"},
         metadata={},  # no voice_category in metadata; must fall back to script.json
     )
     ctx.artifacts["script.json"].parent.mkdir(parents=True, exist_ok=True)
-    ctx.artifacts["script.json"].write_text(json.dumps({
-        "narration": "Words.", "voice_category": "deep_documentary",
-    }))
+    ctx.artifacts["script.json"].write_text(
+        json.dumps(
+            {
+                "narration": "Words.",
+                "voice_category": "deep_documentary",
+            }
+        )
+    )
 
     result = await agent.run(ctx)
 

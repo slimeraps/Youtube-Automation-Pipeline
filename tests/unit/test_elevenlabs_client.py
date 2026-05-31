@@ -9,16 +9,22 @@ from yt_auto.clients.elevenlabs import ElevenLabsClient, ElevenLabsError
 class _FakeTextToSpeech:
     """Stand-in for `elevenlabs.client.ElevenLabs().text_to_speech`."""
 
-    def __init__(self, audio_bytes: bytes | None = None, raise_with: Exception | None = None) -> None:
+    def __init__(
+        self, audio_bytes: bytes | None = None, raise_with: Exception | None = None
+    ) -> None:
         self._audio = audio_bytes
         self._raise = raise_with
         self.calls: list[dict[str, Any]] = []
 
     def convert(self, *, voice_id: str, text: str, model_id: str, output_format: str) -> Any:
-        self.calls.append({
-            "voice_id": voice_id, "text": text,
-            "model_id": model_id, "output_format": output_format,
-        })
+        self.calls.append(
+            {
+                "voice_id": voice_id,
+                "text": text,
+                "model_id": model_id,
+                "output_format": output_format,
+            }
+        )
         if self._raise:
             raise self._raise
         # SDK returns an iterator of bytes; we mimic that.

@@ -21,7 +21,10 @@ def _ctx(tmp_path: Path) -> RunContext:
     audio = tmp_path / "voice.mp3"
     audio.write_bytes(b"fake")
     return RunContext(
-        run_id="r", topic="t", format="short", visibility="public",
+        run_id="r",
+        topic="t",
+        format="short",
+        visibility="public",
         run_dir=tmp_path,
         artifacts={"voice.mp3": audio},
         metadata={},
@@ -30,10 +33,12 @@ def _ctx(tmp_path: Path) -> RunContext:
 
 @pytest.mark.asyncio
 async def test_caption_agent_writes_well_formed_srt(tmp_path: Path) -> None:
-    fake = _FakeWhisper([
-        Segment(start_s=0.0, end_s=2.0, text="Hello world."),
-        Segment(start_s=2.5, end_s=4.25, text="And goodbye."),
-    ])
+    fake = _FakeWhisper(
+        [
+            Segment(start_s=0.0, end_s=2.0, text="Hello world."),
+            Segment(start_s=2.5, end_s=4.25, text="And goodbye."),
+        ]
+    )
     agent = CaptionAgent(whisper=fake)
 
     result = await agent.run(_ctx(tmp_path))

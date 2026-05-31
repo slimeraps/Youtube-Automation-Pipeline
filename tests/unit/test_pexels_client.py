@@ -32,8 +32,9 @@ async def test_search_videos_returns_clips_with_best_video_file() -> None:
         clips = await client.search_videos(query="red sunset", per_page=10)
 
     assert len(clips) == 3
-    assert clips[0] == Clip(id=100, duration_s=12, width=1920, height=1080,
-                            url="https://example.com/hd.mp4")
+    assert clips[0] == Clip(
+        id=100, duration_s=12, width=1920, height=1080, url="https://example.com/hd.mp4"
+    )
     assert clips[1].url == "https://example.com/hd2.mp4"
     assert clips[2].url == "https://example.com/hd3.mp4"
 
@@ -56,9 +57,17 @@ async def test_download_writes_file_to_dest(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_search_videos_returns_empty_list_when_no_videos() -> None:
     def handler(_req: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=json.dumps({
-            "page": 1, "per_page": 10, "total_results": 0, "videos": [],
-        }))
+        return httpx.Response(
+            200,
+            content=json.dumps(
+                {
+                    "page": 1,
+                    "per_page": 10,
+                    "total_results": 0,
+                    "videos": [],
+                }
+            ),
+        )
 
     transport = _stub_transport(handler)
     async with httpx.AsyncClient(transport=transport) as http:

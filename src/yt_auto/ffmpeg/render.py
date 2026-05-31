@@ -1,4 +1,5 @@
 """Mux silent video + narration audio + burned-in subtitles into final mp4."""
+
 import asyncio
 from pathlib import Path
 
@@ -37,18 +38,29 @@ async def render_final(
     vf = f"subtitles='{sub_path}':force_style='{_SUBTITLE_STYLE}',scale={width}:{height},fps={fps}"
 
     proc = await asyncio.create_subprocess_exec(
-        "ffmpeg", "-y",
-        "-i", str(video),
-        "-i", str(audio),
-        "-vf", vf,
-        "-c:v", "libx264",
-        "-b:v", video_bitrate,
-        "-pix_fmt", "yuv420p",
-        "-preset", "medium",
-        "-c:a", "aac",
-        "-b:a", audio_bitrate,
-        "-shortest",                            # stop when narration ends
-        "-movflags", "+faststart",              # YouTube/web playback
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(video),
+        "-i",
+        str(audio),
+        "-vf",
+        vf,
+        "-c:v",
+        "libx264",
+        "-b:v",
+        video_bitrate,
+        "-pix_fmt",
+        "yuv420p",
+        "-preset",
+        "medium",
+        "-c:a",
+        "aac",
+        "-b:a",
+        audio_bitrate,
+        "-shortest",  # stop when narration ends
+        "-movflags",
+        "+faststart",  # YouTube/web playback
         str(dest),
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.PIPE,

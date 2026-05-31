@@ -1,4 +1,5 @@
 """Async wrapper around `ffprobe` for reading media duration."""
+
 import asyncio
 import json
 from pathlib import Path
@@ -12,9 +13,12 @@ async def probe_duration_s(path: Path) -> float:
     """Return the duration of an audio or video file in seconds."""
     proc = await asyncio.create_subprocess_exec(
         "ffprobe",
-        "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "json",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "json",
         str(path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,

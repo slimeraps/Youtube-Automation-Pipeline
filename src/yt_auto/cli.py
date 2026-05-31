@@ -8,6 +8,7 @@ Subcommands:
 - render <run-id>           run Render Agent on an existing run
 - pipeline-local <topic>    chain script→voice→media→caption→render for a fresh run
 """
+
 import argparse
 import asyncio
 import sys
@@ -71,14 +72,18 @@ def _build_parser() -> argparse.ArgumentParser:
     p_script.add_argument("topic")
     p_script.add_argument("--format", choices=["long", "short"], default="long")
     p_script.add_argument("--seed", type=int, default=None)
-    p_script.add_argument("--visibility", choices=["public", "unlisted", "private"], default="public")
+    p_script.add_argument(
+        "--visibility", choices=["public", "unlisted", "private"], default="public"
+    )
 
     # voice / caption / media / render — all share the same shape
     for name in ("voice", "caption", "media", "render"):
         p = sub.add_parser(name, help=f"Run {name.capitalize()} Agent on an existing run")
         p.add_argument("run_id", help="ULID of an existing run under outputs/")
         p.add_argument(
-            "--visibility", choices=["public", "unlisted", "private"], default="public",
+            "--visibility",
+            choices=["public", "unlisted", "private"],
+            default="public",
             help="Sets RunContext.visibility (not used until upload phase)",
         )
 

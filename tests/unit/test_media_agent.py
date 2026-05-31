@@ -69,6 +69,7 @@ class _FakePexels:
 def _make_async_no_op(record: list[Any]) -> Callable[..., Awaitable[None]]:
     async def _fn(**kwargs: Any) -> None:
         record.append(kwargs)
+
     return _fn
 
 
@@ -76,17 +77,36 @@ def _make_ctx(tmp_path: Path) -> RunContext:
     script = tmp_path / "script.json"
     voice = tmp_path / "voice.mp3"
     voice.write_bytes(b"fake")
-    script.write_text(json.dumps({
-        "format": "short",
-        "scenes": [
-            {"index": 0, "start_s": 0.0, "end_s": 5.0, "narration_excerpt": "a",
-             "visual_prompt": "x", "pexels_query": "sunset beach"},
-            {"index": 1, "start_s": 5.0, "end_s": 10.0, "narration_excerpt": "b",
-             "visual_prompt": "y", "pexels_query": "mountain trail"},
-        ],
-    }))
+    script.write_text(
+        json.dumps(
+            {
+                "format": "short",
+                "scenes": [
+                    {
+                        "index": 0,
+                        "start_s": 0.0,
+                        "end_s": 5.0,
+                        "narration_excerpt": "a",
+                        "visual_prompt": "x",
+                        "pexels_query": "sunset beach",
+                    },
+                    {
+                        "index": 1,
+                        "start_s": 5.0,
+                        "end_s": 10.0,
+                        "narration_excerpt": "b",
+                        "visual_prompt": "y",
+                        "pexels_query": "mountain trail",
+                    },
+                ],
+            }
+        )
+    )
     return RunContext(
-        run_id="r", topic="t", format="short", visibility="public",
+        run_id="r",
+        topic="t",
+        format="short",
+        visibility="public",
         run_dir=tmp_path,
         artifacts={"script.json": script, "voice.mp3": voice},
         metadata={"actual_duration_s": 8.0},
@@ -97,10 +117,12 @@ def _make_ctx(tmp_path: Path) -> RunContext:
 async def test_media_agent_searches_downloads_prepares_concats(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    fake_pexels = _FakePexels({
-        "sunset beach": [Clip(id=1, duration_s=10, width=1920, height=1080, url="u1")],
-        "mountain trail": [Clip(id=2, duration_s=10, width=1920, height=1080, url="u2")],
-    })
+    fake_pexels = _FakePexels(
+        {
+            "sunset beach": [Clip(id=1, duration_s=10, width=1920, height=1080, url="u1")],
+            "mountain trail": [Clip(id=2, duration_s=10, width=1920, height=1080, url="u2")],
+        }
+    )
     prepare_calls: list[Any] = []
     concat_calls: list[Any] = []
     monkeypatch.setattr("yt_auto.agents.media.prepare_clip", _make_async_no_op(prepare_calls))
@@ -108,6 +130,7 @@ async def test_media_agent_searches_downloads_prepares_concats(
     async def fake_concat(**kwargs: Any) -> None:
         concat_calls.append(kwargs)
         kwargs["dest"].write_bytes(b"silent_video")
+
     monkeypatch.setattr("yt_auto.agents.media.concat_clips", fake_concat)
 
     agent = MediaAgent(pexels=fake_pexels, per_page=10)

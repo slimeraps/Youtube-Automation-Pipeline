@@ -11,11 +11,20 @@ def _make_test_video(path: Path, seconds: float, width: int, height: int) -> Non
     """Generate a solid-color test video at given duration + dimensions."""
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "lavfi", "-i",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
             f"color=c=red:size={width}x{height}:duration={seconds}:rate=30",
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
         ],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
 
 
@@ -54,10 +63,23 @@ async def test_prepare_clip_scales_to_target_dimensions(tmp_path: Path) -> None:
 
     # Probe the output dimensions
     import json
+
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "v:0",
-         "-show_entries", "stream=width,height", "-of", "json", str(out)],
-        check=True, capture_output=True, text=True,
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height",
+            "-of",
+            "json",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
     )
     streams = json.loads(result.stdout)["streams"][0]
     assert streams["width"] == 1920

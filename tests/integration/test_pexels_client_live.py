@@ -1,4 +1,5 @@
 """Live test against Pexels. Run with: pytest -m integration."""
+
 import os
 from pathlib import Path
 

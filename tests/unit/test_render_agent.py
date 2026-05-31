@@ -21,7 +21,10 @@ def _make_ctx(tmp_path: Path) -> RunContext:
     for p in (video, audio, srt):
         p.write_bytes(b"fake")
     return RunContext(
-        run_id="r", topic="t", format="long", visibility="public",
+        run_id="r",
+        topic="t",
+        format="long",
+        visibility="public",
         run_dir=tmp_path,
         artifacts={
             "script.json": script,
@@ -76,9 +79,13 @@ async def test_render_agent_uses_short_dims_when_format_is_short(
     # Override script.json to short
     ctx.artifacts["script.json"].write_text(json.dumps({"format": "short"}))
     ctx = RunContext(
-        run_id=ctx.run_id, topic=ctx.topic, format="short",
-        visibility=ctx.visibility, run_dir=ctx.run_dir,
-        artifacts=ctx.artifacts, metadata=ctx.metadata,
+        run_id=ctx.run_id,
+        topic=ctx.topic,
+        format="short",
+        visibility=ctx.visibility,
+        run_dir=ctx.run_dir,
+        artifacts=ctx.artifacts,
+        metadata=ctx.metadata,
     )
 
     agent = RenderAgent()

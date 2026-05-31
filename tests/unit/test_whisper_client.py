@@ -29,10 +29,12 @@ class _FakeWhisperModel:
 
 @pytest.mark.asyncio
 async def test_transcribe_returns_segments(tmp_path: Path) -> None:
-    fake_model = _FakeWhisperModel([
-        _FakeSegment(start=0.0, end=2.0, text="Hello world."),
-        _FakeSegment(start=2.0, end=4.0, text="Goodbye."),
-    ])
+    fake_model = _FakeWhisperModel(
+        [
+            _FakeSegment(start=0.0, end=2.0, text="Hello world."),
+            _FakeSegment(start=2.0, end=4.0, text="Goodbye."),
+        ]
+    )
     client = WhisperClient(model_name="small", _model=fake_model)
 
     segments = await client.transcribe(tmp_path / "audio.mp3")

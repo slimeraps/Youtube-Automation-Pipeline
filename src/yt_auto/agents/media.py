@@ -1,4 +1,5 @@
 """Media Agent: search Pexels per scene, download, normalize, concat to silent video."""
+
 import json
 from pathlib import Path
 from typing import Any, Literal, Protocol
@@ -86,9 +87,12 @@ class MediaAgent:
             prepared_path = footage_dir / f"scene_{scene['index']:03d}.mp4"
             await self._pexels.download(url=picked.url, dest=raw_path)
             await prepare_clip(
-                src=raw_path, dest=prepared_path,
+                src=raw_path,
+                dest=prepared_path,
                 target_duration_s=target,
-                width=width, height=height, fps=_FPS,
+                width=width,
+                height=height,
+                fps=_FPS,
             )
             prepared_paths.append(prepared_path)
 

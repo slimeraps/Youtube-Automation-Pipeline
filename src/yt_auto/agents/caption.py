@@ -1,4 +1,5 @@
 """Caption Agent: runs Whisper on voice.mp3 and writes captions.srt."""
+
 from pathlib import Path
 from typing import Protocol
 

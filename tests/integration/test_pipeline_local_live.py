@@ -1,6 +1,7 @@
 """Full end-to-end against ALL real APIs (Gemini + ElevenLabs + Pexels) + ffmpeg + Whisper.
 
 Heavy: takes 60-180 seconds and costs ~$0.10. Run with: pytest -m integration."""
+
 import os
 from pathlib import Path
 
@@ -29,31 +30,37 @@ def _all_keys_present() -> bool:
     )
 
 
-@pytest.mark.skipif(not _all_keys_present(),
-                    reason="Gemini / ElevenLabs / Pexels keys required")
+@pytest.mark.skipif(not _all_keys_present(), reason="Gemini / ElevenLabs / Pexels keys required")
 async def test_pipeline_local_end_to_end(tmp_path: Path) -> None:
     settings = get_settings()
 
     ctx = RunContext(
-        run_id="pipeline-smoke", topic="the history of espresso",
-        format="short", visibility="private",
-        run_dir=tmp_path, artifacts={}, metadata={"seed": 11},
+        run_id="pipeline-smoke",
+        topic="the history of espresso",
+        format="short",
+        visibility="private",
+        run_dir=tmp_path,
+        artifacts={},
+        metadata={"seed": 11},
     )
 
     gemini = GeminiClient(api_key=settings.gemini_api_key, model=settings.gemini_model)
     ctx = ctx.merge(await ScriptAgent(gemini=gemini).run(ctx))
 
     eleven = ElevenLabsClient(api_key=settings.elevenlabs_api_key, model=settings.elevenlabs_model)
-    voice_agent = VoiceAgent(elevenlabs=eleven,
-                             voice_id_for_category=settings.elevenlabs_voice_for_category)
+    voice_agent = VoiceAgent(
+        elevenlabs=eleven, voice_id_for_category=settings.elevenlabs_voice_for_category
+    )
     ctx = ctx.merge(await voice_agent.run(ctx))
 
     pexels = PexelsClient(api_key=settings.pexels_api_key)
     ctx = ctx.merge(await MediaAgent(pexels=pexels, per_page=settings.pexels_per_page).run(ctx))
 
-    whisper = WhisperClient(model_name=settings.whisper_model,
-                            device=settings.whisper_device,
-                            compute_type=settings.whisper_compute_type)
+    whisper = WhisperClient(
+        model_name=settings.whisper_model,
+        device=settings.whisper_device,
+        compute_type=settings.whisper_compute_type,
+    )
     ctx = ctx.merge(await CaptionAgent(whisper=whisper).run(ctx))
 
     ctx = ctx.merge(await RenderAgent().run(ctx))

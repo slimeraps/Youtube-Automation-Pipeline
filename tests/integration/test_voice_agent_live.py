@@ -1,4 +1,5 @@
 """Live test against ElevenLabs. Run with: pytest -m integration."""
+
 import json
 import os
 from pathlib import Path
@@ -26,15 +27,24 @@ async def test_voice_agent_against_real_elevenlabs(tmp_path: Path) -> None:
         pytest.skip("ELEVENLABS_VOICE_CALM_NARRATOR not set in .env")
 
     client = ElevenLabsClient(api_key=settings.elevenlabs_api_key, model=settings.elevenlabs_model)
-    agent = VoiceAgent(elevenlabs=client, voice_id_for_category=settings.elevenlabs_voice_for_category)
+    agent = VoiceAgent(
+        elevenlabs=client, voice_id_for_category=settings.elevenlabs_voice_for_category
+    )
 
     script_path = tmp_path / "script.json"
-    script_path.write_text(json.dumps({
-        "narration": "This is a brief test of the voice agent. One short sentence.",
-        "voice_category": "calm_narrator",
-    }))
+    script_path.write_text(
+        json.dumps(
+            {
+                "narration": "This is a brief test of the voice agent. One short sentence.",
+                "voice_category": "calm_narrator",
+            }
+        )
+    )
     ctx = RunContext(
-        run_id="voice-smoke", topic="t", format="short", visibility="private",
+        run_id="voice-smoke",
+        topic="t",
+        format="short",
+        visibility="private",
         run_dir=tmp_path,
         artifacts={"script.json": script_path},
         metadata={"voice_category": "calm_narrator"},
