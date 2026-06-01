@@ -3,6 +3,7 @@
 The full Google SDK is never invoked. YouTubeClient is exercised via the `_sdk`
 constructor injection point with a hand-built fake; the auth helpers are tested
 against on-disk JSON fixtures."""
+
 import json
 from pathlib import Path
 from typing import Any
@@ -43,10 +44,16 @@ def test_has_valid_token_false_when_unparseable(tmp_path: Path) -> None:
 
 def test_has_valid_token_true_when_parseable_json(tmp_path: Path) -> None:
     good = tmp_path / "good.json"
-    good.write_text(json.dumps({
-        "token": "abc", "refresh_token": "xyz",
-        "client_id": "...", "client_secret": "...",
-    }))
+    good.write_text(
+        json.dumps(
+            {
+                "token": "abc",
+                "refresh_token": "xyz",
+                "client_id": "...",
+                "client_secret": "...",
+            }
+        )
+    )
     assert has_valid_token(good) is True
 
 
@@ -73,21 +80,24 @@ def _make_http_error(status: int, reason: str) -> Exception:
         def get(self, key: str, default: Any = None) -> Any:
             return {"content-type": "application/json"}.get(key, default)
 
-    content = json.dumps({
-        "error": {
-            "code": status,
-            "message": f"simulated {reason}",
-            "errors": [{"reason": reason, "message": f"simulated {reason}"}],
+    content = json.dumps(
+        {
+            "error": {
+                "code": status,
+                "message": f"simulated {reason}",
+                "errors": [{"reason": reason, "message": f"simulated {reason}"}],
+            }
         }
-    }).encode("utf-8")
+    ).encode("utf-8")
     return HttpError(_FakeResp(status), content)
 
 
 class _FakeRequest:
     """Stand-in for the object returned by youtube.videos().insert(...)."""
 
-    def __init__(self, response: dict[str, Any] | None = None,
-                 exc: Exception | None = None) -> None:
+    def __init__(
+        self, response: dict[str, Any] | None = None, exc: Exception | None = None
+    ) -> None:
         self._response = response
         self._exc = exc
         self.execute_calls = 0
@@ -136,9 +146,12 @@ async def test_upload_video_happy_path_returns_canonical_result(tmp_path: Path) 
 
     result = await client.upload_video(
         video_path=_make_dummy_video(tmp_path),
-        title="A title", description="A description.",
-        tags=["alpha", "beta"], category_id="22",
-        privacy_status="public", made_for_kids=False,
+        title="A title",
+        description="A description.",
+        tags=["alpha", "beta"],
+        category_id="22",
+        privacy_status="public",
+        made_for_kids=False,
     )
 
     assert result.video_id == "FAKE_ID"
@@ -165,8 +178,12 @@ async def test_upload_video_403_quota_exceeded_raises_quota_error(tmp_path: Path
     with pytest.raises(YouTubeQuotaError):
         await client.upload_video(
             video_path=_make_dummy_video(tmp_path),
-            title="t", description="d", tags=[],
-            category_id="22", privacy_status="private", made_for_kids=False,
+            title="t",
+            description="d",
+            tags=[],
+            category_id="22",
+            privacy_status="private",
+            made_for_kids=False,
         )
 
 
@@ -183,8 +200,12 @@ async def test_upload_video_403_other_reason_raises_upload_error(tmp_path: Path)
     with pytest.raises(YouTubeUploadError):
         await client.upload_video(
             video_path=_make_dummy_video(tmp_path),
-            title="t", description="d", tags=[],
-            category_id="22", privacy_status="private", made_for_kids=False,
+            title="t",
+            description="d",
+            tags=[],
+            category_id="22",
+            privacy_status="private",
+            made_for_kids=False,
         )
 
 
@@ -201,8 +222,12 @@ async def test_upload_video_500_raises_upload_error(tmp_path: Path) -> None:
     with pytest.raises(YouTubeUploadError):
         await client.upload_video(
             video_path=_make_dummy_video(tmp_path),
-            title="t", description="d", tags=[],
-            category_id="22", privacy_status="private", made_for_kids=False,
+            title="t",
+            description="d",
+            tags=[],
+            category_id="22",
+            privacy_status="private",
+            made_for_kids=False,
         )
 
 
@@ -222,8 +247,12 @@ async def test_upload_video_truncates_overlong_tags(tmp_path: Path) -> None:
 
     await client.upload_video(
         video_path=_make_dummy_video(tmp_path),
-        title="t", description="d", tags=big_tags,
-        category_id="22", privacy_status="private", made_for_kids=False,
+        title="t",
+        description="d",
+        tags=big_tags,
+        category_id="22",
+        privacy_status="private",
+        made_for_kids=False,
     )
 
     sent = sdk.videos().insert_calls[0]["body"]["snippet"]["tags"]

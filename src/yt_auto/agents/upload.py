@@ -49,9 +49,7 @@ class UploadAgent:
             made_for_kids=False,
         )
 
-        uploaded_at = (
-            datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-        )
+        uploaded_at = datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
         upload_doc = {
             "video_id": result.video_id,
             "url": result.url,

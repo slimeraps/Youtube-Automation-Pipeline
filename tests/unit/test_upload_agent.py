@@ -12,16 +12,19 @@ from yt_auto.pipeline.context import RunContext
 class _FakeYouTube:
     """Captures upload_video kwargs and returns a canned UploadResult."""
 
-    def __init__(self, response: UploadResult | None = None,
-                 raise_with: Exception | None = None) -> None:
+    def __init__(
+        self, response: UploadResult | None = None, raise_with: Exception | None = None
+    ) -> None:
         self._response = response or UploadResult(
-            video_id="VID123", url="https://www.youtube.com/watch?v=VID123",
+            video_id="VID123",
+            url="https://www.youtube.com/watch?v=VID123",
         )
         self._raise = raise_with
         self.calls: list[dict[str, Any]] = []
 
     async def upload_video(
-        self, *,
+        self,
+        *,
         video_path: Path,
         title: str,
         description: str,
@@ -30,11 +33,17 @@ class _FakeYouTube:
         privacy_status: PrivacyStatus,
         made_for_kids: bool,
     ) -> UploadResult:
-        self.calls.append({
-            "video_path": video_path, "title": title, "description": description,
-            "tags": tags, "category_id": category_id,
-            "privacy_status": privacy_status, "made_for_kids": made_for_kids,
-        })
+        self.calls.append(
+            {
+                "video_path": video_path,
+                "title": title,
+                "description": description,
+                "tags": tags,
+                "category_id": category_id,
+                "privacy_status": privacy_status,
+                "made_for_kids": made_for_kids,
+            }
+        )
         if self._raise:
             raise self._raise
         return self._response
@@ -44,21 +53,27 @@ def _seed_run(tmp_path: Path, *, visibility: PrivacyStatus = "public") -> RunCon
     script_path = tmp_path / "script.json"
     final_path = tmp_path / "final.mp4"
     final_path.write_bytes(b"FAKE_MP4")
-    script_path.write_text(json.dumps({
-        "topic": "the history of espresso",
-        "format": "short",
-        "voice_category": "calm_narrator",
-        "narration": "...",
-        "scenes": [],
-        "youtube": {
-            "title": "A short history of espresso",
-            "description": "Three minutes on the bean that built cities.",
-            "tags": ["coffee", "history", "espresso"],
-        },
-    }))
+    script_path.write_text(
+        json.dumps(
+            {
+                "topic": "the history of espresso",
+                "format": "short",
+                "voice_category": "calm_narrator",
+                "narration": "...",
+                "scenes": [],
+                "youtube": {
+                    "title": "A short history of espresso",
+                    "description": "Three minutes on the bean that built cities.",
+                    "tags": ["coffee", "history", "espresso"],
+                },
+            }
+        )
+    )
     return RunContext(
-        run_id="01HUP", topic="the history of espresso",
-        format="short", visibility=visibility,
+        run_id="01HUP",
+        topic="the history of espresso",
+        format="short",
+        visibility=visibility,
         run_dir=tmp_path,
         artifacts={"script.json": script_path, "final.mp4": final_path},
         metadata={},
@@ -122,7 +137,10 @@ async def test_upload_agent_raises_when_youtube_block_missing(tmp_path: Path) ->
     final.write_bytes(b"x")
     script.write_text(json.dumps({"topic": "t", "format": "short"}))  # no youtube block
     ctx = RunContext(
-        run_id="r", topic="t", format="short", visibility="public",
+        run_id="r",
+        topic="t",
+        format="short",
+        visibility="public",
         run_dir=tmp_path,
         artifacts={"script.json": script, "final.mp4": final},
         metadata={},

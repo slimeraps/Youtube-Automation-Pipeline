@@ -104,9 +104,7 @@ def _classify_http_error(exc: Any) -> Exception:
     except (json.JSONDecodeError, UnicodeDecodeError):
         data = {}
     reasons = {
-        e.get("reason")
-        for e in (data.get("error", {}).get("errors") or [])
-        if isinstance(e, dict)
+        e.get("reason") for e in (data.get("error", {}).get("errors") or []) if isinstance(e, dict)
     }
     if reasons & _QUOTA_REASONS:
         return YouTubeQuotaError(
@@ -126,8 +124,7 @@ def _load_credentials(credentials_file: Path, token_file: Path) -> Any:
 
     if not token_file.exists():
         raise YouTubeAuthError(
-            f"OAuth token not found at {token_file}. "
-            f"Run: python -m yt_auto youtube-login"
+            f"OAuth token not found at {token_file}. Run: python -m yt_auto youtube-login"
         )
     try:
         creds = Credentials.from_authorized_user_file(str(token_file), SCOPES)  # type: ignore[no-untyped-call]
@@ -207,7 +204,9 @@ class YouTubeClient:
                 mimetype="video/mp4",
             )
             request = self._sdk.videos().insert(
-                part="snippet,status", body=body, media_body=media,
+                part="snippet,status",
+                body=body,
+                media_body=media,
             )
             try:
                 response: dict[str, Any] = request.execute()
