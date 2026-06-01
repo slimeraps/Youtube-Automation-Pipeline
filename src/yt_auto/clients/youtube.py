@@ -80,6 +80,7 @@ def run_oauth_login(credentials_file: Path, token_file: Path) -> None:
 
 PrivacyStatus = Literal["public", "unlisted", "private"]
 
+# YouTube Data API: total tags length (joined by commas) must be <= 500 chars.
 _MAX_TAGS_TOTAL_CHARS = 500
 _QUOTA_REASONS = frozenset({"quotaExceeded", "rateLimitExceeded"})
 
@@ -97,13 +98,10 @@ def _truncate_tags(tags: list[str], *, max_total: int = _MAX_TAGS_TOTAL_CHARS) -
 
 def _classify_http_error(exc: Any) -> Exception:
     """Map a googleapiclient.errors.HttpError to a typed YouTubeError."""
-    content = getattr(exc, "content", b"") or b""
-    if isinstance(content, bytes):
-        try:
-            data = json.loads(content.decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            data = {}
-    else:
+    content: bytes = getattr(exc, "content", b"") or b""
+    try:
+        data = json.loads(content.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         data = {}
     reasons = {
         e.get("reason")
