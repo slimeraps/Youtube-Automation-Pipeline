@@ -6,7 +6,10 @@ Subcommands:
 - caption <run-id>          run Caption Agent on an existing run
 - media <run-id>            run Media Agent on an existing run
 - render <run-id>           run Render Agent on an existing run
+- upload <run-id>           run Upload Agent on an existing run (requires youtube-login)
 - pipeline-local <topic>    chain script→voice→media→caption→render for a fresh run
+- pipeline-full <topic>     chain pipeline-local + upload for a fresh run
+- youtube-login             one-time OAuth flow; writes assets/youtube_token.json
 """
 
 import argparse
@@ -21,11 +24,13 @@ from yt_auto.agents.caption import CaptionAgent
 from yt_auto.agents.media import MediaAgent
 from yt_auto.agents.render import RenderAgent
 from yt_auto.agents.script import ScriptAgent
+from yt_auto.agents.upload import UploadAgent
 from yt_auto.agents.voice import VoiceAgent
 from yt_auto.clients.elevenlabs import ElevenLabsClient
 from yt_auto.clients.gemini import GeminiClient
 from yt_auto.clients.pexels import PexelsClient
 from yt_auto.clients.whisper import WhisperClient
+from yt_auto.clients.youtube import YouTubeClient, run_oauth_login
 from yt_auto.config import Settings, get_settings
 from yt_auto.logging import configure_logging, get_logger
 from yt_auto.pipeline.base import Agent
@@ -63,6 +68,14 @@ def build_render_agent(_settings: Settings) -> RenderAgent:
     return RenderAgent()
 
 
+def build_upload_agent(settings: Settings) -> UploadAgent:
+    youtube = YouTubeClient(
+        credentials_file=settings.youtube_client_secrets_file,
+        token_file=settings.youtube_token_file,
+    )
+    return UploadAgent(youtube=youtube, category_id=settings.youtube_category_id)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="yt_auto", description="YouTube automation pipeline")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -76,15 +89,15 @@ def _build_parser() -> argparse.ArgumentParser:
         "--visibility", choices=["public", "unlisted", "private"], default="public"
     )
 
-    # voice / caption / media / render — all share the same shape
-    for name in ("voice", "caption", "media", "render"):
+    # voice / caption / media / render / upload — all share the same shape
+    for name in ("voice", "caption", "media", "render", "upload"):
         p = sub.add_parser(name, help=f"Run {name.capitalize()} Agent on an existing run")
         p.add_argument("run_id", help="ULID of an existing run under outputs/")
         p.add_argument(
             "--visibility",
             choices=["public", "unlisted", "private"],
             default="public",
-            help="Sets RunContext.visibility (not used until upload phase)",
+            help="Sets RunContext.visibility",
         )
 
     # pipeline-local: fresh run, run all 5 in order, no upload
@@ -96,6 +109,22 @@ def _build_parser() -> argparse.ArgumentParser:
     p_pipe.add_argument("--format", choices=["long", "short"], default="long")
     p_pipe.add_argument("--seed", type=int, default=None)
     p_pipe.add_argument("--visibility", choices=["public", "unlisted", "private"], default="public")
+
+    # pipeline-full: fresh run, run all 6 stages including upload
+    p_full = sub.add_parser(
+        "pipeline-full",
+        help="Run script→voice→media→caption→render→upload end-to-end",
+    )
+    p_full.add_argument("topic")
+    p_full.add_argument("--format", choices=["long", "short"], default="long")
+    p_full.add_argument("--seed", type=int, default=None)
+    p_full.add_argument("--visibility", choices=["public", "unlisted", "private"], default="public")
+
+    # youtube-login: one-time OAuth flow
+    sub.add_parser(
+        "youtube-login",
+        help="Run the OAuth login flow and write assets/youtube_token.json",
+    )
 
     return parser
 
@@ -152,6 +181,37 @@ async def _run_pipeline_local(settings: Settings, args: argparse.Namespace) -> P
     return result.artifacts["final.mp4"]
 
 
+async def _run_pipeline_full(settings: Settings, args: argparse.Namespace) -> Path:
+    ctx = _new_run_context(settings, args)
+
+    script_agent = build_script_agent(settings)
+    ctx = ctx.merge(await script_agent.run(ctx))
+
+    voice_agent = build_voice_agent(settings)
+    ctx = ctx.merge(await voice_agent.run(ctx))
+
+    media_agent = build_media_agent(settings)
+    ctx = ctx.merge(await media_agent.run(ctx))
+
+    caption_agent = build_caption_agent(settings)
+    ctx = ctx.merge(await caption_agent.run(ctx))
+
+    render_agent = build_render_agent(settings)
+    ctx = ctx.merge(await render_agent.run(ctx))
+
+    upload_agent = build_upload_agent(settings)
+    result = await upload_agent.run(ctx)
+    return result.artifacts["upload.json"]
+
+
+def _run_youtube_login(settings: Settings) -> Path:
+    run_oauth_login(
+        credentials_file=settings.youtube_client_secrets_file,
+        token_file=settings.youtube_token_file,
+    )
+    return settings.youtube_token_file
+
+
 def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
@@ -172,6 +232,12 @@ def main() -> None:
         out_path = asyncio.run(_run_single_agent_on_existing(settings, args, build_render_agent))
     elif args.command == "pipeline-local":
         out_path = asyncio.run(_run_pipeline_local(settings, args))
+    elif args.command == "upload":
+        out_path = asyncio.run(_run_single_agent_on_existing(settings, args, build_upload_agent))
+    elif args.command == "pipeline-full":
+        out_path = asyncio.run(_run_pipeline_full(settings, args))
+    elif args.command == "youtube-login":
+        out_path = _run_youtube_login(settings)
     else:
         parser.error(f"unknown command: {args.command}")
         sys.exit(2)
