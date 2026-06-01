@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     )
 
     # LLM
-    gemini_api_key: str = Field(..., description="Google AI Studio / Gemini API key")
+    gemini_api_key: str = Field(default="", description="Google AI Studio / Gemini API key")
     gemini_model: str = Field(default="gemini-2.5-flash")
 
     # Voice (ElevenLabs)

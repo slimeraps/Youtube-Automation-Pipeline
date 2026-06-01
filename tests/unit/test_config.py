@@ -18,11 +18,15 @@ def test_settings_loads_required_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.log_level == "INFO"
 
 
-def test_settings_missing_required_key_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_settings_gemini_api_key_defaults_to_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    # gemini_api_key is not required at construction time so that subcommands
+    # which don't need it (e.g. youtube-login) can run without a populated .env.
+    # Agents that actually call Gemini will fail at request time.
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 
-    with pytest.raises(ValueError):
-        Settings(_env_file=None)  # type: ignore[call-arg]
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert settings.gemini_api_key == ""
 
 
 def test_settings_loads_phase2_keys(monkeypatch: pytest.MonkeyPatch) -> None:
