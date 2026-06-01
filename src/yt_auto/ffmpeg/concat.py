@@ -13,9 +13,12 @@ async def concat_clips(*, clips: list[Path], dest: Path) -> None:
         raise ValueError("concat_clips needs at least one clip")
 
     # The concat demuxer takes a text manifest of `file '<path>'` lines.
+    # ffmpeg resolves relative paths inside the manifest against the manifest's
+    # own directory, not the process CWD — so absolute paths are required when
+    # the manifest and the clips both live under a relative output directory.
     manifest = dest.with_suffix(".concat.txt")
     manifest.write_text(
-        "\n".join(f"file '{c.as_posix()}'" for c in clips),
+        "\n".join(f"file '{c.resolve().as_posix()}'" for c in clips),
         encoding="utf-8",
     )
 
