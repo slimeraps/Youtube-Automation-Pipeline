@@ -182,6 +182,10 @@ async def _run_pipeline_local(settings: Settings, args: argparse.Namespace) -> P
 
 
 async def _run_pipeline_full(settings: Settings, args: argparse.Namespace) -> Path:
+    # Pre-flight: construct the upload agent first so missing OAuth creds fail
+    # fast, before spending 60+ seconds on script -> render.
+    upload_agent = build_upload_agent(settings)
+
     ctx = _new_run_context(settings, args)
 
     script_agent = build_script_agent(settings)
@@ -199,7 +203,6 @@ async def _run_pipeline_full(settings: Settings, args: argparse.Namespace) -> Pa
     render_agent = build_render_agent(settings)
     ctx = ctx.merge(await render_agent.run(ctx))
 
-    upload_agent = build_upload_agent(settings)
     result = await upload_agent.run(ctx)
     return result.artifacts["upload.json"]
 
