@@ -62,3 +62,36 @@ def test_settings_voice_for_unknown_category_raises(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(KeyError, match="unknown voice category"):
         settings.elevenlabs_voice_for_category("not_a_category")
+
+
+def test_settings_loads_phase3_youtube_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "fake")
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "el")
+    monkeypatch.setenv("ELEVENLABS_VOICE_CALM_NARRATOR", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_ENERGETIC_EXPLAINER", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_DEEP_DOCUMENTARY", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_WARM_STORYTELLER", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_MYSTERIOUS_LOWKEY", "v")
+    monkeypatch.setenv("PEXELS_API_KEY", "p")
+
+    settings = Settings()
+
+    assert settings.youtube_client_secrets_file == Path("./assets/youtube_credentials.json")
+    assert settings.youtube_token_file == Path("./assets/youtube_token.json")
+    assert settings.youtube_category_id == "22"
+
+
+def test_settings_youtube_category_id_overrides_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "fake")
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "el")
+    monkeypatch.setenv("ELEVENLABS_VOICE_CALM_NARRATOR", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_ENERGETIC_EXPLAINER", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_DEEP_DOCUMENTARY", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_WARM_STORYTELLER", "v")
+    monkeypatch.setenv("ELEVENLABS_VOICE_MYSTERIOUS_LOWKEY", "v")
+    monkeypatch.setenv("PEXELS_API_KEY", "p")
+    monkeypatch.setenv("YOUTUBE_CATEGORY_ID", "27")
+
+    settings = Settings()
+
+    assert settings.youtube_category_id == "27"
