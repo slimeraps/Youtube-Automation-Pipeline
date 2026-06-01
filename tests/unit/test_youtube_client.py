@@ -258,3 +258,50 @@ async def test_upload_video_truncates_overlong_tags(tmp_path: Path) -> None:
     sent = sdk.videos().insert_calls[0]["body"]["snippet"]["tags"]
     assert len(sent) < len(big_tags)
     assert len(",".join(sent)) <= 500
+
+
+def test_classify_http_error_with_unparseable_content() -> None:
+    """Test error classification when the error response is not valid JSON."""
+    from yt_auto.clients.youtube import _classify_http_error
+    from googleapiclient.errors import HttpError
+
+    class _FakeResp:
+        def __init__(self, status: int) -> None:
+            self.status = status
+            self.reason = "fake"
+
+        def __getitem__(self, key: str) -> str:
+            return {"content-type": "text/plain"}.get(key, "")
+
+        def get(self, key: str, default: str = "") -> str:
+            return {"content-type": "text/plain"}.get(key, default)
+
+    # Content that's not JSON and not UTF-8 decodable.
+    content = b"\x80\x81\x82\x83"
+    exc = HttpError(_FakeResp(500), content)
+
+    result = _classify_http_error(exc)
+    from yt_auto.clients.youtube import YouTubeUploadError
+
+    assert isinstance(result, YouTubeUploadError)
+
+
+def test_truncate_tags_removes_trailing_tags_when_over_limit() -> None:
+    """Test that _truncate_tags removes tags from the end when total length exceeds max."""
+    from yt_auto.clients.youtube import _truncate_tags
+
+    tags = ["short", "medium_tag", "very_long_tag_that_takes_space"] * 10
+    result = _truncate_tags(tags, max_total=100)
+
+    assert len(",".join(result)) <= 100
+    assert len(result) < len(tags)
+
+
+def test_truncate_tags_keeps_all_when_under_limit() -> None:
+    """Test that _truncate_tags keeps all tags when within the limit."""
+    from yt_auto.clients.youtube import _truncate_tags
+
+    tags = ["a", "b", "c"]
+    result = _truncate_tags(tags, max_total=100)
+
+    assert result == tags
