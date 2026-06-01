@@ -262,8 +262,9 @@ async def test_upload_video_truncates_overlong_tags(tmp_path: Path) -> None:
 
 def test_classify_http_error_with_unparseable_content() -> None:
     """Test error classification when the error response is not valid JSON."""
-    from yt_auto.clients.youtube import _classify_http_error
     from googleapiclient.errors import HttpError
+
+    from yt_auto.clients.youtube import _classify_http_error
 
     class _FakeResp:
         def __init__(self, status: int) -> None:
