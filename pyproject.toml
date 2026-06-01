@@ -13,6 +13,9 @@ dependencies = [
     "python-ulid>=3.0",
     "elevenlabs>=1.5",
     "faster-whisper>=1.0",
+    "google-api-python-client>=2.140",
+    "google-auth-oauthlib>=1.2",
+    "google-auth-httplib2>=0.2",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +61,14 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "faster_whisper.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "googleapiclient.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "google_auth_oauthlib.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
