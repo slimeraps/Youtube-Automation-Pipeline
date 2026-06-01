@@ -7,6 +7,7 @@ from typing import Any, Literal, Protocol
 from yt_auto.clients.pexels import Clip
 from yt_auto.ffmpeg.concat import concat_clips
 from yt_auto.ffmpeg.prepare_clip import prepare_clip
+from yt_auto.ffmpeg.probe import probe_duration_s
 from yt_auto.logging import get_logger
 from yt_auto.pipeline.base import StageResult
 from yt_auto.pipeline.context import RunContext
@@ -68,7 +69,11 @@ class MediaAgent:
 
     async def run(self, ctx: RunContext) -> StageResult:
         script = json.loads(ctx.artifacts["script.json"].read_text())
-        actual_voice_duration: float = ctx.metadata["actual_duration_s"]
+        # Pipeline-full passes actual_duration_s via in-memory metadata. The per-agent
+        # CLI rehydrates ctx from disk and loses that key, so probe voice.mp3 directly.
+        actual_voice_duration = ctx.metadata.get("actual_duration_s")
+        if actual_voice_duration is None:
+            actual_voice_duration = await probe_duration_s(ctx.artifacts["voice.mp3"])
         scenes = rescale_scenes(script["scenes"], target_total_duration_s=actual_voice_duration)
         fmt: Literal["long", "short"] = script["format"]
         width, height = _DIMS_BY_FORMAT[fmt]
