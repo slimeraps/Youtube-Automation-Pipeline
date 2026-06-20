@@ -84,3 +84,26 @@ async def test_pexels_source_raises_on_no_clips(tmp_path: Path) -> None:
             fps=30,
             dest=tmp_path / "out.mp4",
         )
+
+
+@pytest.mark.asyncio
+async def test_pexels_source_wraps_unexpected_exception(tmp_path: Path) -> None:
+    class _ExplodingPexels:
+        async def search_videos(self, *, query: str, per_page: int) -> list[Clip]:
+            raise RuntimeError("network down")
+
+        async def download(self, *, url: str, dest: Path) -> None:
+            raise AssertionError("should not download")
+
+    source = PexelsSource(pexels=_ExplodingPexels(), per_page=10)
+    with pytest.raises(SceneSourceError, match="pexels source failed") as exc_info:
+        await source.produce_clip(
+            scene=_scene(),
+            target_duration_s=4.0,
+            width=1920,
+            height=1080,
+            fps=30,
+            dest=tmp_path / "out.mp4",
+        )
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert "network down" in str(exc_info.value.__cause__)
