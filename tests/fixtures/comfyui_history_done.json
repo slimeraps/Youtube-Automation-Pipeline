@@ -1,0 +1,13 @@
+{
+  "PROMPT_ID_HERE": {
+    "prompt": [],
+    "outputs": {
+      "9": {
+        "images": [
+          {"filename": "yt_auto_00001_.png", "subfolder": "", "type": "output"}
+        ]
+      }
+    },
+    "status": {"completed": true}
+  }
+}
