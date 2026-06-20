@@ -26,6 +26,9 @@ build/
 # Whisper model cache
 models/
 
+# Bundled ComfyUI install (not source-controlled)
+third_party/
+
 # OS / editor
 .DS_Store
 Thumbs.db
