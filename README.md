@@ -59,3 +59,17 @@ If anything fails after Render, you can resume from the failed stage with `pytho
 uv run pytest                      # unit tests only (fast)
 uv run pytest -m integration       # live API tests (costs a few cents)
 ```
+
+## Changelog
+
+### 0.1.0 — Local SDXL b-roll
+
+Replaces generic Pexels stock footage with locally generated SDXL stills animated via ffmpeg Ken Burns. Pexels stays as a per-scene fallback so a broken ComfyUI never kills a run.
+
+- **`media_source` config** (`local_diffusion` default, `pexels` opt-out) and `comfyui_url` setting.
+- **`ComfyUIClient`** — async submit / poll / download / ping against a local ComfyUI HTTP server, with bundled SDXL txt2img workflow template.
+- **Ken Burns helper** (`ffmpeg/ken_burns.py`) — renders a still into a clip with `zoom_in` / `zoom_out` / `pan_left` / `pan_right` motion.
+- **`SceneSource` strategy pattern** — `MediaAgent` delegates per-scene clip production to a swappable source. `LocalDiffusionSource` (SDXL → Ken Burns) and `PexelsSource` (existing search/download/prepare flow) both implement it.
+- **Per-scene fallback** — a failed primary source falls back to Pexels for that scene only; startup ping failure skips primary for the whole run.
+- **Script Agent emits `image_prompt`** per scene plus a script-level `video_style` phrase, appended to every prompt for stylistic coherence.
+- **Setup guide** at [docs/comfyui-setup.md](docs/comfyui-setup.md).
