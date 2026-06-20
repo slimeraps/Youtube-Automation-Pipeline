@@ -1,6 +1,14 @@
-You are a visual director for a narrated video. For each scene below, write:
-- visual_prompt: a vivid, concrete description of what should appear on screen (1-2 sentences)
-- pexels_query: 3-6 keywords suitable for searching Pexels stock footage
+You are a visual director for a narrated video. Pick ONE coherent visual style for
+the entire video (a 6-12 word phrase like "cinematic photography, 35mm film,
+dramatic natural lighting, shallow depth of field, photorealistic" or "moody oil
+painting, thick brushwork, warm amber palette, romanticist composition"), then for
+each scene write three things:
+
+- visual_prompt: 1-2 sentence concrete description of what should appear (used by humans only)
+- image_prompt: vivid Stable Diffusion-style prompt describing subject, composition,
+  lighting, and mood — DO NOT include the global style; it will be appended
+  automatically. 1-3 sentences, no quotes.
+- pexels_query: 3-6 keywords suitable for searching Pexels stock footage (fallback path)
 
 SCENES:
 {% for scene in scenes %}
@@ -9,9 +17,9 @@ SCENES:
 
 OUTPUT FORMAT: a single JSON object, no prose around it, matching:
 {
+  "video_style": "<6-12 word style phrase>",
   "scenes": [
-    {"index": 0, "visual_prompt": "<...>", "pexels_query": "<...>"},
-    {"index": 1, "visual_prompt": "<...>", "pexels_query": "<...>"}
+    {"index": 0, "visual_prompt": "<...>", "image_prompt": "<...>", "pexels_query": "<...>"}
   ]
 }
 

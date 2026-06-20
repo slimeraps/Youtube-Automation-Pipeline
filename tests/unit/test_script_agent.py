@@ -90,6 +90,7 @@ async def test_script_agent_computes_scene_timings_from_word_counts(
     # Each scene has visual_prompt and pexels_query merged in
     for sc in scenes:
         assert "visual_prompt" in sc
+        assert "image_prompt" in sc
         assert "pexels_query" in sc
 
 
@@ -166,3 +167,20 @@ async def test_script_agent_metadata_includes_voice_category_and_params(
     assert "duration_target_s" in result.metadata
     assert "prompt_params" in result.metadata
     assert result.metadata["prompt_params"]["seed"] == 42
+
+
+@pytest.mark.asyncio
+async def test_script_json_has_image_prompt_and_video_style(
+    tmp_path: Path,
+    narration_fixture: dict[str, Any],
+    scene_visuals_fixture: dict[str, Any],
+) -> None:
+    fake = FakeGemini([narration_fixture, scene_visuals_fixture])
+    agent = ScriptAgent(gemini=fake, word_count_tolerance=2.0)
+    result = await agent.run(_ctx(tmp_path))
+    data = json.loads(result.artifacts["script.json"].read_text())
+
+    assert data["video_style"] == scene_visuals_fixture["video_style"]
+    for scene in data["scenes"]:
+        assert isinstance(scene["image_prompt"], str)
+        assert len(scene["image_prompt"]) > 0

@@ -55,12 +55,14 @@ class ScriptAgent:
             render_scene_visuals_prompt(scenes=scenes_timed)
         )
         scenes_with_visuals = self._merge_visuals(scenes_timed, visuals_data["scenes"])
+        video_style = visuals_data.get("video_style", "")
 
         script = {
             "topic": ctx.topic,
             "format": ctx.format,
             "voice_category": params.voice_category,
             "duration_target_s": target_duration_seconds(ctx.format),
+            "video_style": video_style,
             "narration": narration_data["narration"],
             "scenes": scenes_with_visuals,
             "youtube": narration_data["youtube"],
@@ -175,6 +177,7 @@ class ScriptAgent:
                 {
                     **scene,
                     "visual_prompt": v["visual_prompt"],
+                    "image_prompt": v["image_prompt"],
                     "pexels_query": v["pexels_query"],
                 }
             )
