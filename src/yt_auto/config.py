@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     pexels_api_key: str = Field(default="")
     pexels_per_page: int = Field(default=10, ge=1, le=80)
 
+    # B-roll source
+    media_source: Literal["local_diffusion", "pexels"] = Field(default="local_diffusion")
+    comfyui_url: str = Field(default="http://127.0.0.1:8188")
+
     # Captions (faster-whisper)
     whisper_model: str = Field(default="small")
     whisper_device: Literal["cpu", "cuda"] = Field(default="cpu")

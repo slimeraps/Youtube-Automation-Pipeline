@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from yt_auto.config import Settings
 
@@ -99,3 +100,23 @@ def test_settings_youtube_category_id_overrides_from_env(monkeypatch: pytest.Mon
     settings = Settings()
 
     assert settings.youtube_category_id == "27"
+
+
+def test_comfyui_url_default() -> None:
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert s.comfyui_url == "http://127.0.0.1:8188"
+
+
+def test_media_source_default() -> None:
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert s.media_source == "local_diffusion"
+
+
+def test_media_source_accepts_pexels() -> None:
+    s = Settings(media_source="pexels", _env_file=None)  # type: ignore[call-arg]
+    assert s.media_source == "pexels"
+
+
+def test_media_source_rejects_garbage() -> None:
+    with pytest.raises(ValidationError):
+        Settings(media_source="bogus", _env_file=None)  # type: ignore[call-arg]
