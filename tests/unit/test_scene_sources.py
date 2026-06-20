@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from yt_auto.agents.sources import PexelsSource, SceneSourceError
+from yt_auto.agents.sources import LocalDiffusionSource, PexelsSource, SceneSourceError
 from yt_auto.clients.pexels import Clip
 
 
@@ -107,3 +107,133 @@ async def test_pexels_source_wraps_unexpected_exception(tmp_path: Path) -> None:
         )
     assert isinstance(exc_info.value.__cause__, RuntimeError)
     assert "network down" in str(exc_info.value.__cause__)
+
+
+class _FakeComfy:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.calls: list[dict[str, Any]] = []
+        self._fail = fail
+
+    async def generate_image(
+        self, *, prompt: str, width: int, height: int, seed: int, dest: Path
+    ) -> None:
+        self.calls.append(
+            {"prompt": prompt, "width": width, "height": height, "seed": seed, "dest": dest}
+        )
+        if self._fail:
+            from yt_auto.clients.comfyui import ComfyUIError
+            raise ComfyUIError("simulated")
+        # Write a real PNG-shaped file so Ken Burns can read it.
+        # Tests below stub still_to_clip so the bytes don't actually need to be valid PNG.
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"\x89PNG\r\n\x1a\nFAKE")
+
+
+@pytest.mark.asyncio
+async def test_local_diffusion_source_appends_video_style(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_comfy = _FakeComfy()
+    kb_calls: list[dict[str, Any]] = []
+
+    async def fake_kb(**kwargs: Any) -> None:
+        kb_calls.append(kwargs)
+        kwargs["dest"].write_bytes(b"CLIP")
+
+    monkeypatch.setattr("yt_auto.agents.sources.still_to_clip", fake_kb)
+
+    source = LocalDiffusionSource(
+        comfyui=fake_comfy, video_style="cinematic photography, 35mm film"
+    )
+    dest = tmp_path / "scene_000.mp4"
+    await source.produce_clip(
+        scene=_scene(image_prompt="a lone monk on a mountain"),
+        target_duration_s=4.0,
+        width=1920,
+        height=1080,
+        fps=30,
+        dest=dest,
+    )
+
+    assert len(fake_comfy.calls) == 1
+    sent = fake_comfy.calls[0]
+    assert sent["prompt"] == (
+        "a lone monk on a mountain, cinematic photography, 35mm film"
+    )
+    # SDXL-native landscape dims for 16:9 target.
+    assert sent["width"] == 1344
+    assert sent["height"] == 768
+    # Ken Burns called with the generated PNG path and target output dims.
+    assert kb_calls[0]["width"] == 1920
+    assert kb_calls[0]["height"] == 1080
+    assert kb_calls[0]["duration_s"] == 4.0
+
+
+@pytest.mark.asyncio
+async def test_local_diffusion_source_uses_portrait_gen_dims_for_vertical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_comfy = _FakeComfy()
+
+    async def fake_kb(**kwargs: Any) -> None:
+        kwargs["dest"].write_bytes(b"CLIP")
+
+    monkeypatch.setattr("yt_auto.agents.sources.still_to_clip", fake_kb)
+
+    source = LocalDiffusionSource(comfyui=fake_comfy, video_style="x")
+    await source.produce_clip(
+        scene=_scene(),
+        target_duration_s=4.0,
+        width=1080,
+        height=1920,
+        fps=30,
+        dest=tmp_path / "out.mp4",
+    )
+    sent = fake_comfy.calls[0]
+    assert sent["width"] == 768
+    assert sent["height"] == 1344
+
+
+@pytest.mark.asyncio
+async def test_local_diffusion_source_raises_on_comfyui_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_comfy = _FakeComfy(fail=True)
+
+    async def fake_kb(**kwargs: Any) -> None:
+        pass
+
+    monkeypatch.setattr("yt_auto.agents.sources.still_to_clip", fake_kb)
+
+    source = LocalDiffusionSource(comfyui=fake_comfy, video_style="x")
+    with pytest.raises(SceneSourceError, match="comfyui"):
+        await source.produce_clip(
+            scene=_scene(),
+            target_duration_s=4.0,
+            width=1920,
+            height=1080,
+            fps=30,
+            dest=tmp_path / "out.mp4",
+        )
+
+
+@pytest.mark.asyncio
+async def test_local_diffusion_source_seeds_from_scene_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_comfy = _FakeComfy()
+
+    async def fake_kb(**kwargs: Any) -> None:
+        kwargs["dest"].write_bytes(b"CLIP")
+
+    monkeypatch.setattr("yt_auto.agents.sources.still_to_clip", fake_kb)
+    source = LocalDiffusionSource(comfyui=fake_comfy, video_style="x")
+    await source.produce_clip(
+        scene=_scene(index=7),
+        target_duration_s=4.0,
+        width=1920,
+        height=1080,
+        fps=30,
+        dest=tmp_path / "out.mp4",
+    )
+    assert fake_comfy.calls[0]["seed"] == 7

@@ -8,11 +8,18 @@ catches that and tries the next source in line.
 from pathlib import Path
 from typing import Any, Protocol
 
+from yt_auto.clients.comfyui import ComfyUIClient, ComfyUIError
 from yt_auto.clients.pexels import Clip
+from yt_auto.ffmpeg.ken_burns import still_to_clip
 from yt_auto.ffmpeg.prepare_clip import prepare_clip
 from yt_auto.logging import get_logger
 
 log = get_logger(__name__)
+
+# SDXL-native generation dimensions, chosen to match output aspect ratio.
+# Anything close to 1024x1024 area; these are the standard SDXL ratios.
+_GEN_DIMS_LANDSCAPE = (1344, 768)
+_GEN_DIMS_PORTRAIT = (768, 1344)
 
 
 class SceneSourceError(Exception):
@@ -22,6 +29,12 @@ class SceneSourceError(Exception):
 class PexelsLike(Protocol):
     async def search_videos(self, *, query: str, per_page: int) -> list[Clip]: ...
     async def download(self, *, url: str, dest: Path) -> None: ...
+
+
+class ComfyLike(Protocol):
+    async def generate_image(
+        self, *, prompt: str, width: int, height: int, seed: int, dest: Path
+    ) -> None: ...
 
 
 class SceneSource(Protocol):
@@ -81,3 +94,56 @@ class PexelsSource:
             raise
         except Exception as exc:  # noqa: BLE001 — translate any I/O / ffmpeg failure
             raise SceneSourceError(f"pexels source failed: {exc}") from exc
+
+
+class LocalDiffusionSource:
+    """Generate a still via ComfyUI, then animate it with Ken Burns."""
+
+    def __init__(self, comfyui: ComfyLike, *, video_style: str) -> None:
+        self._comfyui = comfyui
+        self._video_style = video_style
+
+    async def produce_clip(
+        self,
+        *,
+        scene: dict[str, Any],
+        target_duration_s: float,
+        width: int,
+        height: int,
+        fps: int,
+        dest: Path,
+    ) -> None:
+        image_prompt = scene["image_prompt"]
+        full_prompt = f"{image_prompt}, {self._video_style}"
+        gen_w, gen_h = _GEN_DIMS_LANDSCAPE if width >= height else _GEN_DIMS_PORTRAIT
+        seed = int(scene["index"])
+        png_path = dest.with_name(dest.stem + ".png")
+        try:
+            await self._comfyui.generate_image(
+                prompt=full_prompt, width=gen_w, height=gen_h, seed=seed, dest=png_path
+            )
+            await still_to_clip(
+                src=png_path,
+                dest=dest,
+                duration_s=target_duration_s,
+                width=width,
+                height=height,
+                fps=fps,
+                seed=seed,
+            )
+        except ComfyUIError as exc:
+            raise SceneSourceError(f"comfyui generation failed: {exc}") from exc
+        except Exception as exc:  # noqa: BLE001
+            raise SceneSourceError(f"local diffusion failed: {exc}") from exc
+
+
+# Ensure ComfyUIClient stays importable from this module for callers / type tools.
+__all__ = [
+    "ComfyLike",
+    "ComfyUIClient",
+    "LocalDiffusionSource",
+    "PexelsLike",
+    "PexelsSource",
+    "SceneSource",
+    "SceneSourceError",
+]
