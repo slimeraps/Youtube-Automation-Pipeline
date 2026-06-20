@@ -24,8 +24,10 @@ from yt_auto.agents.caption import CaptionAgent
 from yt_auto.agents.media import MediaAgent
 from yt_auto.agents.render import RenderAgent
 from yt_auto.agents.script import ScriptAgent
+from yt_auto.agents.sources import LocalDiffusionSource, PexelsSource
 from yt_auto.agents.upload import UploadAgent
 from yt_auto.agents.voice import VoiceAgent
+from yt_auto.clients.comfyui import ComfyUIClient
 from yt_auto.clients.elevenlabs import ElevenLabsClient
 from yt_auto.clients.gemini import GeminiClient
 from yt_auto.clients.pexels import PexelsClient
@@ -60,8 +62,24 @@ def build_caption_agent(settings: Settings) -> CaptionAgent:
 
 
 def build_media_agent(settings: Settings) -> MediaAgent:
-    pexels = PexelsClient(api_key=settings.pexels_api_key)
-    return MediaAgent(pexels=pexels, per_page=settings.pexels_per_page)
+    pexels_client = PexelsClient(api_key=settings.pexels_api_key)
+    pexels_source = PexelsSource(pexels=pexels_client, per_page=settings.pexels_per_page)
+
+    if settings.media_source == "pexels":
+        return MediaAgent(primary=pexels_source, fallback=None)
+
+    # local_diffusion: primary = ComfyUI (factory binds video_style at run time),
+    # fallback = Pexels, healthcheck = comfy_client.ping
+    comfy_client = ComfyUIClient(base_url=settings.comfyui_url)
+
+    def local_source_factory(video_style: str) -> LocalDiffusionSource:
+        return LocalDiffusionSource(comfyui=comfy_client, video_style=video_style)
+
+    return MediaAgent(
+        primary=local_source_factory,
+        fallback=pexels_source,
+        primary_healthcheck=comfy_client.ping,
+    )
 
 
 def build_render_agent(_settings: Settings) -> RenderAgent:
