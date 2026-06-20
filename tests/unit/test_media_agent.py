@@ -178,3 +178,52 @@ async def test_media_agent_calls_primary_factory_with_video_style(
     agent = MediaAgent(primary=factory, fallback=None)
     await agent.run(_make_ctx(tmp_path, video_style="oil painting, romanticist"))
     assert received_styles == ["oil painting, romanticist"]
+
+
+@pytest.mark.asyncio
+async def test_media_agent_skips_primary_when_healthcheck_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    primary = _RecordingSource()
+    fallback = _RecordingSource()
+
+    async def failing_healthcheck() -> bool:
+        return False
+
+    async def fake_concat(**kwargs: Any) -> None:
+        kwargs["dest"].write_bytes(b"VIDEO")
+
+    monkeypatch.setattr("yt_auto.agents.media.concat_clips", fake_concat)
+
+    agent = MediaAgent(
+        primary=primary, fallback=fallback, primary_healthcheck=failing_healthcheck
+    )
+    result = await agent.run(_make_ctx(tmp_path))
+
+    assert primary.calls == []  # never invoked
+    assert [c["index"] for c in fallback.calls] == [0, 1]
+    assert result.metadata["source_counts"] == {"primary": 0, "fallback": 2}
+    assert result.metadata["primary_healthy"] is False
+
+
+@pytest.mark.asyncio
+async def test_media_agent_uses_primary_when_healthcheck_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    primary = _RecordingSource()
+    fallback = _RecordingSource()
+
+    async def ok_healthcheck() -> bool:
+        return True
+
+    async def fake_concat(**kwargs: Any) -> None:
+        kwargs["dest"].write_bytes(b"VIDEO")
+
+    monkeypatch.setattr("yt_auto.agents.media.concat_clips", fake_concat)
+
+    agent = MediaAgent(
+        primary=primary, fallback=fallback, primary_healthcheck=ok_healthcheck
+    )
+    result = await agent.run(_make_ctx(tmp_path))
+    assert [c["index"] for c in primary.calls] == [0, 1]
+    assert result.metadata["primary_healthy"] is True

@@ -1,7 +1,7 @@
 """Media Agent: produce a normalized clip per scene via pluggable SceneSources, then concat."""
 
 import json
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, Literal
 
@@ -61,15 +61,30 @@ class MediaAgent:
     name = "media"
 
     def __init__(
-        self, *, primary: PrimaryArg, fallback: SceneSource | None = None
+        self,
+        *,
+        primary: PrimaryArg,
+        fallback: SceneSource | None = None,
+        primary_healthcheck: Callable[[], Awaitable[bool]] | None = None,
     ) -> None:
         self._primary_arg = primary
         self._fallback = fallback
+        self._primary_healthcheck = primary_healthcheck
 
     async def run(self, ctx: RunContext) -> StageResult:
         script = json.loads(ctx.artifacts["script.json"].read_text())
         video_style = script.get("video_style", "")
         primary = _resolve_primary(self._primary_arg, video_style)
+
+        primary_healthy = True
+        if self._primary_healthcheck is not None:
+            primary_healthy = await self._primary_healthcheck()
+            if not primary_healthy:
+                log.warning("primary_source_unreachable_using_fallback")
+                if self._fallback is None:
+                    raise MediaError(
+                        "primary healthcheck failed and no fallback configured"
+                    )
 
         actual_voice_duration = ctx.metadata.get("actual_duration_s")
         if actual_voice_duration is None:
@@ -86,6 +101,26 @@ class MediaAgent:
         for scene in scenes:
             target = float(scene["end_s"] - scene["start_s"])
             dest = footage_dir / f"scene_{scene['index']:03d}.mp4"
+
+            if not primary_healthy:
+                # Whole-run downgrade: use fallback directly, skip primary.
+                try:
+                    await self._fallback.produce_clip(  # type: ignore[union-attr]
+                        scene=scene,
+                        target_duration_s=target,
+                        width=width,
+                        height=height,
+                        fps=_FPS,
+                        dest=dest,
+                    )
+                    counts["fallback"] += 1
+                except SceneSourceError as exc:
+                    raise MediaError(
+                        f"fallback failed on scene {scene['index']} (primary already skipped): {exc}"
+                    ) from exc
+                prepared_paths.append(dest)
+                continue
+
             try:
                 await primary.produce_clip(
                     scene=scene,
@@ -135,5 +170,9 @@ class MediaAgent:
 
         return StageResult(
             artifacts={"video_silent.mp4": dest_video},
-            metadata={"clip_count": len(prepared_paths), "source_counts": counts},
+            metadata={
+                "clip_count": len(prepared_paths),
+                "source_counts": counts,
+                "primary_healthy": primary_healthy,
+            },
         )
