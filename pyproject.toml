@@ -78,3 +78,8 @@ markers = [
     "integration: marks tests that hit real external APIs (deselect with -m 'not integration')",
 ]
 addopts = "-m 'not integration'"
+
+[dependency-groups]
+dev = [
+    "pillow>=12.2.0",
+]
