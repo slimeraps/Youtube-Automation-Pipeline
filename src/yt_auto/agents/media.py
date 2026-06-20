@@ -1,12 +1,12 @@
-"""Media Agent: search Pexels per scene, download, normalize, concat to silent video."""
+"""Media Agent: produce a normalized clip per scene via pluggable SceneSources, then concat."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Any, Literal
 
-from yt_auto.clients.pexels import Clip
+from yt_auto.agents.sources import SceneSource, SceneSourceError
 from yt_auto.ffmpeg.concat import concat_clips
-from yt_auto.ffmpeg.prepare_clip import prepare_clip
 from yt_auto.ffmpeg.probe import probe_duration_s
 from yt_auto.logging import get_logger
 from yt_auto.pipeline.base import StageResult
@@ -14,21 +14,21 @@ from yt_auto.pipeline.context import RunContext
 
 log = get_logger(__name__)
 
-# Render dimensions for each format.
 _DIMS_BY_FORMAT: dict[str, tuple[int, int]] = {
     "long": (1920, 1080),
     "short": (1080, 1920),
 }
 _FPS = 30
 
+# A primary may be a SceneSource directly, or a factory that takes the script's
+# video_style and returns a SceneSource. The factory form lets LocalDiffusionSource
+# bind to a style read from script.json at run time without leaking script state
+# into the CLI wiring.
+PrimaryArg = SceneSource | Callable[[str], SceneSource]
+
 
 class MediaError(Exception):
     """Could not produce video_silent.mp4."""
-
-
-class PexelsLike(Protocol):
-    async def search_videos(self, *, query: str, per_page: int) -> list[Clip]: ...
-    async def download(self, *, url: str, dest: Path) -> None: ...
 
 
 def rescale_scenes(
@@ -46,31 +46,31 @@ def rescale_scenes(
         duration = (sc["end_s"] - sc["start_s"]) * factor
         rescaled.append({**sc, "start_s": cursor, "end_s": cursor + duration})
         cursor += duration
-    # Snap last end exactly to target.
     rescaled[-1]["end_s"] = target_total_duration_s
     return rescaled
 
 
-def pick_best_clip(clips: list[Clip], *, target_duration_s: float) -> Clip:
-    if not clips:
-        raise MediaError("no clips returned from Pexels for this scene")
-    qualifying = [c for c in clips if c.duration_s >= target_duration_s]
-    if qualifying:
-        return min(qualifying, key=lambda c: c.duration_s)
-    return max(clips, key=lambda c: c.duration_s)
+def _resolve_primary(arg: PrimaryArg, video_style: str) -> SceneSource:
+    # A SceneSource has produce_clip; a factory is callable but lacks it.
+    if hasattr(arg, "produce_clip"):
+        return arg  # type: ignore[return-value]
+    return arg(video_style)  # type: ignore[operator]
 
 
 class MediaAgent:
     name = "media"
 
-    def __init__(self, pexels: PexelsLike, *, per_page: int = 10) -> None:
-        self._pexels = pexels
-        self._per_page = per_page
+    def __init__(
+        self, *, primary: PrimaryArg, fallback: SceneSource | None = None
+    ) -> None:
+        self._primary_arg = primary
+        self._fallback = fallback
 
     async def run(self, ctx: RunContext) -> StageResult:
         script = json.loads(ctx.artifacts["script.json"].read_text())
-        # Pipeline-full passes actual_duration_s via in-memory metadata. The per-agent
-        # CLI rehydrates ctx from disk and loses that key, so probe voice.mp3 directly.
+        video_style = script.get("video_style", "")
+        primary = _resolve_primary(self._primary_arg, video_style)
+
         actual_voice_duration = ctx.metadata.get("actual_duration_s")
         if actual_voice_duration is None:
             actual_voice_duration = await probe_duration_s(ctx.artifacts["voice.mp3"])
@@ -81,31 +81,59 @@ class MediaAgent:
         footage_dir = ctx.run_dir / "footage"
         footage_dir.mkdir(parents=True, exist_ok=True)
         prepared_paths: list[Path] = []
+        counts = {"primary": 0, "fallback": 0}
 
         for scene in scenes:
-            query: str = scene["pexels_query"]
             target = float(scene["end_s"] - scene["start_s"])
-            clips = await self._pexels.search_videos(query=query, per_page=self._per_page)
-            picked = pick_best_clip(clips, target_duration_s=target)
+            dest = footage_dir / f"scene_{scene['index']:03d}.mp4"
+            try:
+                await primary.produce_clip(
+                    scene=scene,
+                    target_duration_s=target,
+                    width=width,
+                    height=height,
+                    fps=_FPS,
+                    dest=dest,
+                )
+                counts["primary"] += 1
+            except SceneSourceError as exc:
+                log.warning(
+                    "primary_source_failed",
+                    scene_index=scene["index"],
+                    error=str(exc),
+                )
+                if self._fallback is None:
+                    raise MediaError(
+                        f"primary failed on scene {scene['index']} and no fallback configured: {exc}"
+                    ) from exc
+                try:
+                    await self._fallback.produce_clip(
+                        scene=scene,
+                        target_duration_s=target,
+                        width=width,
+                        height=height,
+                        fps=_FPS,
+                        dest=dest,
+                    )
+                    counts["fallback"] += 1
+                except SceneSourceError as exc2:
+                    raise MediaError(
+                        f"both sources failed on scene {scene['index']}: "
+                        f"primary={exc}; fallback={exc2}"
+                    ) from exc2
 
-            raw_path = footage_dir / f"scene_{scene['index']:03d}_raw.mp4"
-            prepared_path = footage_dir / f"scene_{scene['index']:03d}.mp4"
-            await self._pexels.download(url=picked.url, dest=raw_path)
-            await prepare_clip(
-                src=raw_path,
-                dest=prepared_path,
-                target_duration_s=target,
-                width=width,
-                height=height,
-                fps=_FPS,
-            )
-            prepared_paths.append(prepared_path)
+            prepared_paths.append(dest)
 
-        dest = ctx.run_dir / "video_silent.mp4"
-        await concat_clips(clips=prepared_paths, dest=dest)
-        log.info("media_done", path=str(dest), clips=len(prepared_paths))
+        dest_video = ctx.run_dir / "video_silent.mp4"
+        await concat_clips(clips=prepared_paths, dest=dest_video)
+        log.info(
+            "media_done",
+            path=str(dest_video),
+            clips=len(prepared_paths),
+            source_counts=counts,
+        )
 
         return StageResult(
-            artifacts={"video_silent.mp4": dest},
-            metadata={"clip_count": len(prepared_paths)},
+            artifacts={"video_silent.mp4": dest_video},
+            metadata={"clip_count": len(prepared_paths), "source_counts": counts},
         )
