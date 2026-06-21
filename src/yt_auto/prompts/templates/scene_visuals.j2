@@ -19,8 +19,10 @@ OUTPUT FORMAT: a single JSON object, no prose around it, matching:
 {
   "video_style": "<6-12 word style phrase>",
   "scenes": [
-    {"index": 0, "visual_prompt": "<...>", "image_prompt": "<...>", "pexels_query": "<...>"}
+    {"index": 0, "visual_prompt": "<...>", "image_prompt": "<...>", "pexels_query": "<...>"},
+    {"index": 1, "visual_prompt": "<...>", "image_prompt": "<...>", "pexels_query": "<...>"}
   ]
 }
 
 Return exactly one entry per input scene, in the same order, with matching indexes.
+The "scenes" array MUST have the same length as the input SCENES list above.

@@ -167,10 +167,18 @@ class ScriptAgent:
     def _merge_visuals(
         timed: list[dict[str, Any]], visuals: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        by_index = {v["index"]: v for v in visuals}
+        by_index = {v.get("index"): v for v in visuals}
+        all_indexes_present = all(scene["index"] in by_index for scene in timed)
+        positional = not all_indexes_present and len(visuals) == len(timed)
+        if positional:
+            log.warning(
+                "visuals_index_mismatch_positional_fallback",
+                timed_indexes=[s["index"] for s in timed],
+                visual_indexes=[v.get("index") for v in visuals],
+            )
         out: list[dict[str, Any]] = []
-        for scene in timed:
-            v = by_index.get(scene["index"])
+        for pos, scene in enumerate(timed):
+            v = visuals[pos] if positional else by_index.get(scene["index"])
             if v is None:
                 raise ValueError(f"visuals response missing scene index {scene['index']}")
             out.append(

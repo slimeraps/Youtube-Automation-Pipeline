@@ -153,6 +153,51 @@ async def test_script_agent_fails_fast_on_zero_scenes(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_script_agent_falls_back_positionally_when_visual_indexes_mismatch(
+    tmp_path: Path,
+    narration_fixture: dict[str, Any],
+    scene_visuals_fixture: dict[str, Any],
+) -> None:
+    # Shift every visual index by +1 so by-index lookup misses every scene,
+    # but counts still match — positional fallback should kick in.
+    shifted = {
+        "video_style": scene_visuals_fixture["video_style"],
+        "scenes": [
+            {**v, "index": v["index"] + 1} for v in scene_visuals_fixture["scenes"]
+        ],
+    }
+    fake = FakeGemini([narration_fixture, shifted])
+    agent = ScriptAgent(gemini=fake, word_count_tolerance=2.0)
+
+    result = await agent.run(_ctx(tmp_path))
+    data = json.loads(result.artifacts["script.json"].read_text())
+
+    scenes = data["scenes"]
+    assert len(scenes) == len(scene_visuals_fixture["scenes"])
+    # Scene 0 should have picked up the first visual entry positionally
+    assert scenes[0]["visual_prompt"] == scene_visuals_fixture["scenes"][0]["visual_prompt"]
+    assert scenes[-1]["pexels_query"] == scene_visuals_fixture["scenes"][-1]["pexels_query"]
+
+
+@pytest.mark.asyncio
+async def test_script_agent_raises_when_visual_count_mismatches(
+    tmp_path: Path,
+    narration_fixture: dict[str, Any],
+    scene_visuals_fixture: dict[str, Any],
+) -> None:
+    # Drop one visual entry — counts no longer match, positional fallback can't save us.
+    truncated = {
+        "video_style": scene_visuals_fixture["video_style"],
+        "scenes": scene_visuals_fixture["scenes"][:-1],
+    }
+    fake = FakeGemini([narration_fixture, truncated])
+    agent = ScriptAgent(gemini=fake, word_count_tolerance=2.0)
+
+    with pytest.raises(ValueError, match="visuals response missing scene index"):
+        await agent.run(_ctx(tmp_path))
+
+
+@pytest.mark.asyncio
 async def test_script_agent_metadata_includes_voice_category_and_params(
     tmp_path: Path,
     narration_fixture: dict[str, Any],
