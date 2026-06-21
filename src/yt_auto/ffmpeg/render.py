@@ -5,13 +5,22 @@ from pathlib import Path
 
 from yt_auto.ffmpeg.prepare_clip import FFmpegError
 
-# libass style for captions: white bold sans-serif, black outline + shadow,
-# centered horizontally, sitting ~12% up from the bottom.
-_SUBTITLE_STYLE = (
-    "FontName=Arial,FontSize=36,Bold=1,PrimaryColour=&H00FFFFFF,"
-    "OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=1,"
-    "Alignment=2,MarginV=120"
-)
+def _subtitle_style(width: int, height: int) -> str:
+    # Tell libass the canvas is the real video resolution so FontSize and
+    # margins are interpreted in actual pixels instead of libass's default
+    # PlayResY=288 (which makes everything ~6x too large on a 1920-tall
+    # vertical short).
+    font_size = round(height * 0.029)  # ~56 on 1920, ~31 on 1080
+    margin_v = round(height * 0.16)  # ~307 on 1920 — sits in the lower third
+    margin_h = round(width * 0.07)  # ~76 on 1080
+    # PrimaryColour is libass BGR: &H00BBGGRR. #FFB300 amber → 00B3FF.
+    return (
+        f"PlayResX={width},PlayResY={height},"
+        "FontName=Arial,Bold=1,PrimaryColour=&H0000B3FF,"
+        "OutlineColour=&H00000000,BorderStyle=1,Outline=4,Shadow=1,"
+        f"FontSize={font_size},Alignment=2,"
+        f"MarginV={margin_v},MarginL={margin_h},MarginR={margin_h}"
+    )
 
 
 def _escape_subtitle_path(p: Path) -> str:
@@ -35,7 +44,9 @@ async def render_final(
 ) -> None:
     """Encode the final mp4 with burned-in subtitles and AAC audio."""
     sub_path = _escape_subtitle_path(subtitles)
-    vf = f"subtitles='{sub_path}':force_style='{_SUBTITLE_STYLE}',scale={width}:{height},fps={fps}"
+    # Scale BEFORE burning subtitles so libass sees the final canvas size.
+    style = _subtitle_style(width, height)
+    vf = f"scale={width}:{height},fps={fps},subtitles='{sub_path}':force_style='{style}'"
 
     proc = await asyncio.create_subprocess_exec(
         "ffmpeg",
